@@ -39,7 +39,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     });
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/main');
         break;
       case 1:
         Navigator.pushReplacementNamed(context, '/main');
@@ -48,37 +48,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         Navigator.pushNamed(context, '/cart');
         break;
       case 3:
-        _showLogoutDialog();
+        Navigator.pushNamed(context, '/profile');
         break;
     }
-  }
-
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<AuthProvider>().logout();
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/login',
-                (route) => false,
-              );
-            },
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildDrawer(AuthProvider auth) {
@@ -139,8 +111,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
+            leading: const Icon(Icons.person_outline),
+            title: const Text('Profile'),
             selected: _selectedIndex == 3,
             onTap: () => _onItemTapped(3),
           ),
@@ -156,7 +128,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.shopping_bag), label: 'Shop'),
         BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
-        BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Logout'),
+        BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
       ],
       currentIndex: _selectedIndex,
       selectedItemColor: AppTheme.kGold,
@@ -367,13 +339,13 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     return Scaffold(
       backgroundColor: AppTheme.kBg,
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           'Style Hub',
           style: TextStyle(color: AppTheme.kDark, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
-        iconTheme: IconThemeData(color: AppTheme.kDark),
+        iconTheme: const IconThemeData(color: AppTheme.kDark),
       ),
       drawer: ResponsiveHelper.isDesktop(context) ? _buildDrawer(auth) : null,
       bottomNavigationBar: ResponsiveHelper.isDesktop(context)
@@ -399,16 +371,23 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                           const SizedBox(height: 20),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              product.imageUrl,
-                              height: ResponsiveHelper.getImageHeight(context),
-                              width: double.infinity,
-                              fit: BoxFit.contain, // Better for product details
-                              errorBuilder: (_, __, ___) => const Icon(
-                                Icons.image_not_supported,
-                                size: 100,
-                              ),
-                            ),
+                            child: product.imageUrl.startsWith('http')
+                                ? Image.network(
+                                    product.imageUrl,
+                                    height: ResponsiveHelper.getImageHeight(context),
+                                    width: double.infinity,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) => const Icon(
+                                      Icons.image_not_supported,
+                                      size: 100,
+                                    ),
+                                  )
+                                : Image.asset(
+                                    product.imageUrl,
+                                    height: ResponsiveHelper.getImageHeight(context),
+                                    width: double.infinity,
+                                    fit: BoxFit.contain,
+                                  ),
                           ),
                         ],
                       ),
@@ -438,14 +417,21 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 const SizedBox(height: 10),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    product.imageUrl,
-                    height: ResponsiveHelper.getImageHeight(context),
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.image_not_supported, size: 80),
-                  ),
+                  child: product.imageUrl.startsWith('http')
+                      ? Image.network(
+                          product.imageUrl,
+                          height: ResponsiveHelper.getImageHeight(context),
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.image_not_supported, size: 80),
+                        )
+                      : Image.asset(
+                          product.imageUrl,
+                          height: ResponsiveHelper.getImageHeight(context),
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                 ),
                 const SizedBox(height: 24),
                 _buildProductDetails(product, false),

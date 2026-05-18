@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/cart_provider.dart';
+import '../providers/order_provider.dart';
+import '../providers/product_provider.dart';
 import '../theme/app_theme.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -26,12 +31,34 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _animationController.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initApp());
+  }
 
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
-    });
+  Future<void> _initApp() async {
+    final authProvider = context.read<AuthProvider>();
+    final cartProvider = context.read<CartProvider>();
+    final orderProvider = context.read<OrderProvider>();
+    final productProvider = context.read<ProductProvider>();
+
+    await Future.wait([
+      Future.delayed(const Duration(seconds: 2)),
+      productProvider.loadProducts(),
+    ]);
+
+    if (!mounted) return;
+
+    await authProvider.restoreSession();
+
+    if (!mounted) return;
+
+    if (authProvider.user != null) {
+      final uid = authProvider.user!.uid;
+      await cartProvider.setUser(uid);
+      orderProvider.loadOrders(uid);
+      Navigator.of(context).pushReplacementNamed('/main');
+    } else {
+      Navigator.of(context).pushReplacementNamed('/login');
+    }
   }
 
   @override
@@ -86,6 +113,10 @@ class _SplashScreenState extends State<SplashScreen>
                   fontWeight: FontWeight.w300,
                   letterSpacing: 2,
                 ),
+              ),
+              const SizedBox(height: 40),
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.kGold),
               ),
             ],
           ),

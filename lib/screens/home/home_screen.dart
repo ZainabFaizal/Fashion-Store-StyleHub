@@ -86,38 +86,10 @@ class _HomeScreenState extends State<HomeScreen>
       case 2: // Cart
         Navigator.pushNamed(context, '/cart');
         break;
-      case 3: // Logout
-        _showLogoutDialog();
+      case 3: // Profile
+        Navigator.pushNamed(context, '/profile');
         break;
     }
-  }
-
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<AuthProvider>().logout();
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/login',
-                (route) => false,
-              );
-            },
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _navigateToSearch() {
@@ -244,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -310,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
           ),
-          _buildNavItem(Icons.logout, 'Logout', 3),
+          _buildNavItem(Icons.person_outline, 'Profile', 3),
         ],
       ),
     );
@@ -397,8 +369,8 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
+            leading: const Icon(Icons.person_outline),
+            title: const Text('Profile'),
             selected: _selectedIndex == 3,
             onTap: () => _onItemTapped(3),
           ),
@@ -795,12 +767,19 @@ class ProductSearchDelegate extends SearchDelegate<String> {
       itemBuilder: (context, index) {
         final product = suggestions[index];
         return ListTile(
-          leading: Image.network(
-            product.imageUrl,
-            width: 50,
-            height: 50,
-            fit: BoxFit.cover,
-          ),
+          leading: product.imageUrl.startsWith('http')
+              ? Image.network(
+                  product.imageUrl,
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.cover,
+                )
+              : Image.asset(
+                  product.imageUrl,
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.cover,
+                ),
           title: Text(product.name),
           subtitle: Text('\$${product.price.toStringAsFixed(2)}'),
           onTap: () {

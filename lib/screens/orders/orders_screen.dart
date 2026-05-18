@@ -34,7 +34,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     });
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/main');
         break;
       case 1:
         Navigator.pushReplacementNamed(context, '/main');
@@ -43,37 +43,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
         Navigator.pushNamed(context, '/cart');
         break;
       case 3:
-        _showLogoutDialog();
+        Navigator.pushNamed(context, '/profile');
         break;
     }
-  }
-
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<AuthProvider>().logout();
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/login',
-                (route) => false,
-              );
-            },
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildDrawer(AuthProvider auth) {
@@ -190,7 +162,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       rows: provider.orders.map((order) {
                         final date = DateFormat(
                           'MMM dd, yyyy',
-                        ).format(order.createdAt!);
+                        ).format(order.createdAt);
                         return DataRow(
                           cells: [
                             DataCell(Text('Order ${order.orderId}')),
@@ -217,7 +189,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   final order = provider.orders[i];
                   final date = DateFormat(
                     'MMM dd, yyyy',
-                  ).format(order.createdAt!);
+                  ).format(order.createdAt);
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(

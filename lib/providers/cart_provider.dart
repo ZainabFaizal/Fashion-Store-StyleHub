@@ -6,34 +6,41 @@ import '../services/firestore_service.dart';
 class CartProvider extends ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
   final List<CartItem> _items = [];
-  String? _userId; // set on login for Firestore persistence
+  String? _userId;
 
   List<CartItem> get items => _items;
 
-  int get itemCount {
-    return _items.fold(0, (sum, item) => sum + item.quantity);
-  }
+  int get itemCount => _items.fold(0, (sum, item) => sum + item.quantity);
 
-  double get subtotal {
-    return _items.fold(0.0, (sum, item) => sum + item.total);
-  }
+  double get subtotal => _items.fold(0.0, (sum, item) => sum + item.total);
 
-  double get shippingCost {
-    if (subtotal >= 100) return 0.0;
-    return 9.99;
-  }
+  double get shippingCost => subtotal >= 100 ? 0.0 : 9.99;
 
-  double get total {
-    return subtotal + shippingCost;
-  }
+  double get total => subtotal + shippingCost;
 
   bool isInCart(String productId, String size) {
-    return _items.any((item) => item.productId == productId && item.size == size);
+    return _items.any(
+      (item) => item.productId == productId && item.size == size,
+    );
   }
 
-  // ── Set user ID on login (enables Firestore persistence) ───
-  void setUser(String? userId) {
+  Future<void> setUser(String? userId) async {
     _userId = userId;
+    if (userId != null) {
+      await _loadCart(userId);
+    } else {
+      _items.clear();
+      notifyListeners();
+    }
+  }
+
+  Future<void> _loadCart(String userId) async {
+    try {
+      final cartItems = await _firestoreService.fetchCart(userId);
+      _items.clear();
+      _items.addAll(cartItems);
+      notifyListeners();
+    } catch (_) {}
   }
 
   void addItem(Product product, String size) {
@@ -54,7 +61,6 @@ class CartProvider extends ChangeNotifier {
         category: product.category,
       );
       _items.add(item);
-      // Phase 2: persist to Firestore
       if (_userId != null) {
         _firestoreService.saveCartItem(_userId!, item);
       }
@@ -64,7 +70,6 @@ class CartProvider extends ChangeNotifier {
 
   void removeItem(String cartKey) {
     _items.removeWhere((item) => item.cartKey == cartKey);
-    // Phase 2: remove from Firestore
     if (_userId != null) {
       _firestoreService.removeCartItem(_userId!, cartKey);
     }
@@ -77,11 +82,10 @@ class CartProvider extends ChangeNotifier {
       if (quantity <= 0) {
         removeItem(cartKey);
         return;
-      } else {
-        _items[index] = _items[index].copyWith(quantity: quantity);
-        if (_userId != null) {
-          _firestoreService.saveCartItem(_userId!, _items[index]);
-        }
+      }
+      _items[index] = _items[index].copyWith(quantity: quantity);
+      if (_userId != null) {
+        _firestoreService.saveCartItem(_userId!, _items[index]);
       }
       notifyListeners();
     }
@@ -98,7 +102,7 @@ class CartProvider extends ChangeNotifier {
   CartItem? getItem(String cartKey) {
     try {
       return _items.firstWhere((item) => item.cartKey == cartKey);
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }

@@ -22,7 +22,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     });
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/main');
         break;
       case 1:
         Navigator.pushReplacementNamed(context, '/main');
@@ -31,37 +31,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         Navigator.pushNamed(context, '/cart');
         break;
       case 3:
-        _showLogoutDialog();
+        Navigator.pushNamed(context, '/profile');
         break;
     }
-  }
-
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<AuthProvider>().logout();
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/login',
-                (route) => false,
-              );
-            },
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildDrawer(AuthProvider auth) {
@@ -122,8 +94,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
+            leading: const Icon(Icons.person_outline),
+            title: const Text('Profile'),
             selected: _selectedIndex == 3,
             onTap: () => _onItemTapped(3),
           ),
@@ -139,7 +111,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.shopping_bag), label: 'Shop'),
         BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
-        BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Logout'),
+        BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
       ],
       currentIndex: _selectedIndex,
       selectedItemColor: AppTheme.kGold,

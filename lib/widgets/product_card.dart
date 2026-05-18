@@ -20,6 +20,37 @@ class ProductCard extends StatelessWidget {
     required this.onAddToCart,
   });
 
+  Widget _buildImage(String imageUrl) {
+    if (imageUrl.startsWith('http')) {
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        placeholder: (context, url) => Container(
+          color: AppTheme.kLightGray,
+          child: const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.kGold),
+            ),
+          ),
+        ),
+        errorWidget: (context, url, error) => Container(
+          color: AppTheme.kLightGray,
+          child: const Icon(Icons.broken_image_outlined),
+        ),
+      );
+    }
+    return Image.asset(
+      imageUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      errorBuilder: (context, error, stack) => Container(
+        color: AppTheme.kLightGray,
+        child: const Icon(Icons.broken_image_outlined),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -35,25 +66,7 @@ class ProductCard extends StatelessWidget {
                 children: [
                   Container(
                     color: AppTheme.kBg,
-                    child: CachedNetworkImage(
-                      imageUrl: product.imageUrl,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      placeholder: (context, url) => Container(
-                        color: AppTheme.kLightGray,
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppTheme.kGold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: AppTheme.kLightGray,
-                        child: const Icon(Icons.error),
-                      ),
-                    ),
+                    child: _buildImage(product.imageUrl),
                   ),
                   if (product.badge.isNotEmpty)
                     Positioned(
@@ -94,7 +107,7 @@ class ProductCard extends StatelessWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 4,
                             ),
                           ],

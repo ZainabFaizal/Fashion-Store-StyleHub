@@ -32,7 +32,7 @@ class _MainScreenState extends State<MainScreen> {
     });
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/main');
         break;
       case 1:
         // Already here
@@ -41,37 +41,9 @@ class _MainScreenState extends State<MainScreen> {
         Navigator.pushNamed(context, '/cart');
         break;
       case 3:
-        _showLogoutDialog();
+        Navigator.pushNamed(context, '/profile');
         break;
     }
-  }
-
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<AuthProvider>().logout();
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/login',
-                (route) => false,
-              );
-            },
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildDrawer(AuthProvider auth) {
@@ -132,8 +104,8 @@ class _MainScreenState extends State<MainScreen> {
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
+            leading: const Icon(Icons.person_outline),
+            title: const Text('Profile'),
             selected: _selectedIndex == 3,
             onTap: () => _onItemTapped(3),
           ),
@@ -149,7 +121,7 @@ class _MainScreenState extends State<MainScreen> {
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.shopping_bag), label: 'Shop'),
         BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Cart'),
-        BottomNavigationBarItem(icon: Icon(Icons.logout), label: 'Logout'),
+        BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
       ],
       currentIndex: _selectedIndex,
       selectedItemColor: AppTheme.kGold,
@@ -239,13 +211,19 @@ class _MainScreenState extends State<MainScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
-                                    child: CachedNetworkImage(
-                                      imageUrl: product.imageUrl,
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                      errorWidget: (_, __, ___) =>
-                                          const Icon(Icons.image_not_supported),
-                                    ),
+                                    child: product.imageUrl.startsWith('http')
+                                        ? CachedNetworkImage(
+                                            imageUrl: product.imageUrl,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            errorWidget: (_, __, ___) => const Icon(
+                                                Icons.image_not_supported),
+                                          )
+                                        : Image.asset(
+                                            product.imageUrl,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                          ),
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.all(8),

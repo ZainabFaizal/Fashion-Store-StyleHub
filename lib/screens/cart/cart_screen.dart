@@ -31,38 +31,10 @@ class _CartScreenState extends State<CartScreen> {
       case 2: // Cart
         // Already here
         break;
-      case 3: // Logout
-        _showLogoutDialog();
+      case 3: // Profile
+        Navigator.pushNamed(context, '/profile');
         break;
     }
-  }
-
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<AuthProvider>().logout();
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/login',
-                (route) => false,
-              );
-            },
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildDrawer(AuthProvider auth) {
@@ -123,8 +95,8 @@ class _CartScreenState extends State<CartScreen> {
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
+            leading: const Icon(Icons.person_outline),
+            title: const Text('Profile'),
             selected: _selectedIndex == 3,
             onTap: () => _onItemTapped(3),
           ),
@@ -141,7 +113,7 @@ class _CartScreenState extends State<CartScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -208,7 +180,7 @@ class _CartScreenState extends State<CartScreen> {
               ),
             ),
           ),
-          _buildNavItem(Icons.logout, 'Logout', 3),
+          _buildNavItem(Icons.person_outline, 'Profile', 3),
         ],
       ),
     );
@@ -233,6 +205,22 @@ class _CartScreenState extends State<CartScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _quantityButton(IconData icon, VoidCallback onPressed) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          border: Border.all(color: AppTheme.kGold),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Icon(icon, size: 16, color: AppTheme.kDark),
       ),
     );
   }
@@ -270,12 +258,19 @@ class _CartScreenState extends State<CartScreen> {
                                 padding: const EdgeInsets.all(16),
                                 child: Row(
                                   children: [
-                                    CachedNetworkImage(
-                                      imageUrl: item.imageUrl,
-                                      width: 80,
-                                      height: 80,
-                                      fit: BoxFit.cover,
-                                    ),
+                                    item.imageUrl.startsWith('http')
+                                        ? CachedNetworkImage(
+                                            imageUrl: item.imageUrl,
+                                            width: 80,
+                                            height: 80,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Image.asset(
+                                            item.imageUrl,
+                                            width: 80,
+                                            height: 80,
+                                            fit: BoxFit.cover,
+                                          ),
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
@@ -368,41 +363,157 @@ class _CartScreenState extends State<CartScreen> {
                           final item = cart.items[index];
                           return Card(
                             margin: const EdgeInsets.only(bottom: 12),
-                            child: ListTile(
-                              leading: CachedNetworkImage(
-                                imageUrl: item.imageUrl,
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.cover,
-                              ),
-                              title: Text(item.name),
-                              subtitle: Text(
-                                'Size: ${item.size} × ${item.quantity}',
-                              ),
-                              trailing: Text(
-                                '\$${item.total.toStringAsFixed(2)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: item.imageUrl.startsWith('http')
+                                        ? CachedNetworkImage(
+                                            imageUrl: item.imageUrl,
+                                            width: 70,
+                                            height: 70,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Image.asset(
+                                            item.imageUrl,
+                                            width: 70,
+                                            height: 70,
+                                            fit: BoxFit.cover,
+                                          ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Size: ${item.size}',
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            _quantityButton(
+                                              Icons.remove,
+                                              () => cart.updateQuantity(
+                                                item.cartKey,
+                                                item.quantity - 1,
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                                              child: Text(
+                                                '${item.quantity}',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                            ),
+                                            _quantityButton(
+                                              Icons.add,
+                                              () => cart.updateQuantity(
+                                                item.cartKey,
+                                                item.quantity + 1,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                        onPressed: () => cart.removeItem(item.cartKey),
+                                      ),
+                                      Text(
+                                        '\$${item.total.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           );
                         },
                       ),
                     ),
-                    Padding(
+                    Container(
                       padding: ResponsiveHelper.getPadding(context),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withValues(alpha: 0.15),
+                            blurRadius: 8,
+                            offset: const Offset(0, -2),
+                          ),
+                        ],
+                      ),
                       child: Column(
                         children: [
-                          Text(
-                            'Total: \$${cart.total.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: ResponsiveHelper.getFontSize(
-                                context,
-                                18,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Subtotal'),
+                              Text('\$${cart.subtotal.toStringAsFixed(2)}'),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Shipping'),
+                              Text(
+                                cart.shippingCost == 0 ? 'FREE' : '\$${cart.shippingCost.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: cart.shippingCost == 0 ? Colors.green : null,
+                                ),
                               ),
-                              fontWeight: FontWeight.bold,
-                            ),
+                            ],
+                          ),
+                          const Divider(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Total',
+                                style: TextStyle(
+                                  fontSize: ResponsiveHelper.getFontSize(context, 16),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                '\$${cart.total.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: ResponsiveHelper.getFontSize(context, 16),
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.kGold,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 12),
                           SizedBox(

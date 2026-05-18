@@ -15,15 +15,24 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _addressController;
   final _cityController = TextEditingController();
   final _zipController = TextEditingController();
   final _countryController = TextEditingController(text: 'Sri Lanka');
   String _paymentMethod = 'Cash on Delivery';
   bool _isLoading = false;
-  int _selectedIndex = 2; // Cart context
+  int _selectedIndex = 2;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = context.read<AuthProvider>().user;
+    _nameController = TextEditingController(text: user?.name ?? '');
+    _phoneController = TextEditingController(text: user?.phone ?? '');
+    _addressController = TextEditingController(text: user?.address ?? '');
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -39,38 +48,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       case 2: // Cart
         Navigator.pushNamed(context, '/cart');
         break;
-      case 3: // Logout
-        _showLogoutDialog();
+      case 3: // Profile
+        Navigator.pushNamed(context, '/profile');
         break;
     }
-  }
-
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.read<AuthProvider>().logout();
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/login',
-                (route) => false,
-              );
-            },
-            child: const Text('Logout'),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildDrawer(AuthProvider auth) {
@@ -131,8 +112,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           ),
           const Divider(),
           ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Logout'),
+            leading: const Icon(Icons.person_outline),
+            title: const Text('Profile'),
             selected: _selectedIndex == 3,
             onTap: () => _onItemTapped(3),
           ),
@@ -149,7 +130,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -216,7 +197,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             ),
           ),
-          _buildNavItem(Icons.logout, 'Logout', 3),
+          _buildNavItem(Icons.person_outline, 'Profile', 3),
         ],
       ),
     );
@@ -283,21 +264,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
       return;
     }
-    setState(() => _isLoading = true);
+
     final cartProvider = context.read<CartProvider>();
     final orderProvider = context.read<OrderProvider>();
+    final authProvider = context.read<AuthProvider>();
+    final userId = authProvider.user?.uid;
+
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please login to place an order')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
     try {
       await orderProvider.placeOrder(
-        userId: 'guest',
+        userId: userId,
         items: cartProvider.items,
         total: cartProvider.total,
         delivery: {
-          'name': _nameController.text,
-          'phone': _phoneController.text,
-          'address': _addressController.text,
-          'city': _cityController.text,
-          'zip': _zipController.text,
-          'country': _countryController.text,
+          'name': _nameController.text.trim(),
+          'phone': _phoneController.text.trim(),
+          'address': _addressController.text.trim(),
+          'city': _cityController.text.trim(),
+          'zip': _zipController.text.trim(),
+          'country': _countryController.text.trim(),
         },
         paymentMethod: _paymentMethod,
       );
@@ -306,9 +299,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       if (mounted) _showSuccessDialog();
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Order failed. Try again')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Order failed: ${e.toString()}')),
+        );
+      }
     }
   }
 
@@ -541,31 +536,46 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        RadioListTile(
-          title: Text(
-            'Cash on Delivery',
-            style: TextStyle(
-              fontSize: ResponsiveHelper.getFontSize(context, 14),
-            ),
-          ),
-          value: 'Cash on Delivery',
-          groupValue: _paymentMethod,
-          onChanged: (value) =>
-              setState(() => _paymentMethod = value as String),
-        ),
-        RadioListTile(
-          title: Text(
-            'Credit Card',
-            style: TextStyle(
-              fontSize: ResponsiveHelper.getFontSize(context, 14),
-            ),
-          ),
-          value: 'Credit Card',
-          groupValue: _paymentMethod,
-          onChanged: (value) =>
-              setState(() => _paymentMethod = value as String),
-        ),
+        _paymentOption('Cash on Delivery', Icons.money),
+        _paymentOption('Credit Card', Icons.credit_card),
       ],
+    );
+  }
+
+  Widget _paymentOption(String value, IconData icon) {
+    final selected = _paymentMethod == value;
+    return InkWell(
+      onTap: () => setState(() => _paymentMethod = value),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: selected ? AppTheme.kGold : Colors.grey.shade300,
+            width: selected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          color: selected ? AppTheme.kGold.withValues(alpha: 0.08) : null,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: selected ? AppTheme.kGold : Colors.grey),
+            const SizedBox(width: 12),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: ResponsiveHelper.getFontSize(context, 14),
+                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                color: selected ? AppTheme.kDark : Colors.grey.shade700,
+              ),
+            ),
+            const Spacer(),
+            if (selected)
+              const Icon(Icons.check_circle, color: AppTheme.kGold, size: 20),
+          ],
+        ),
+      ),
     );
   }
 
